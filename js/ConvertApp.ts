@@ -12,11 +12,62 @@ class ConvertApp extends HTMLElement {
             () => this.convertToKValue());
 
         this.querySelectorAll<HTMLTextAreaElement>("textarea[id]").forEach(txt => {
+            this.addDropSupport(txt);
+
             const v = localStorage.getItem(txt.id);
             if (v) {
                 txt.value = v;
             }
         });
+    }
+
+    private addDropSupport(txt: HTMLTextAreaElement) {
+        txt.addEventListener("dragover", () => {
+            txt.style.cursor = "alias";
+        });
+        txt.addEventListener("dragleave", () => {
+            txt.style.removeProperty("cursor");
+        });
+        txt.addEventListener("drop", e => {
+            txt.style.removeProperty("cursor");
+            e.preventDefault();
+
+            if (!e.dataTransfer) { return; }
+            if (e.dataTransfer.items) {
+                for (const item of e.dataTransfer.items) {
+                    switch (item.kind) {
+                        case "file": {
+                            const file = item.getAsFile();
+                            if (!file) { continue; }
+        
+                            void this.readFileToTextbox(file, txt);
+
+                            break;
+                        }
+                        case "string": {
+                            item.getAsString(str => {
+                                if (str) {
+                                    txt.value = str;
+                                }
+                            });
+
+                            break;
+                        }
+                    }
+                }
+            } else {
+                const file = e.dataTransfer.files[0];
+                if (!file) { return; }
+
+                void this.readFileToTextbox(file, txt);
+            }
+        });
+    }
+
+    private readFileToTextbox(file: File, txt: HTMLTextAreaElement) {
+        const reader = new FileReader();
+        reader.onload = () => txt.value = reader.result as string;
+        reader.readAsText(file);
     }
 
     private convert(txtIn: HTMLTextAreaElement, txtOut: HTMLTextAreaElement,
@@ -35,8 +86,8 @@ class ConvertApp extends HTMLElement {
         }
 
         transform(json);
-        
-        const outJson =JSON.stringify(json, undefined, 4) 
+
+        const outJson = JSON.stringify(json, undefined, 4)
         txtOut.value = outJson;
         if (outJson.length < 10000) {
             localStorage.setItem(txtOut.id, outJson);
