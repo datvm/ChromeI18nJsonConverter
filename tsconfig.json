@@ -1,0 +1,10 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "target": "es2021",
+        "module": "es2022",
+        "strict": true,
+        "removeComments": true,
+        "noEmitOnError": true
+    }
+}
