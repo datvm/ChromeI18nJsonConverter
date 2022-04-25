@@ -4,8 +4,8 @@ class ConvertApp extends HTMLElement {
         super();
         this.txtChrJson = this.querySelector("#txt-chrome");
         this.txtKValueJson = this.querySelector("#txt-key-value");
-        this.querySelector(".btn-to-i18n")?.addEventListener("click", () => this.convertToChr());
-        this.querySelector(".btn-to-key-value")?.addEventListener("click", () => this.convertToKValue());
+        this.querySelector(".btn-to-i18n")?.addEventListener("click", () => void this.convertToChr());
+        this.querySelector(".btn-to-key-value")?.addEventListener("click", () => void this.convertToKValue());
         this.querySelectorAll("textarea[id]").forEach(txt => {
             this.addDropSupport(txt);
             const v = localStorage.getItem(txt.id);
@@ -13,6 +13,30 @@ class ConvertApp extends HTMLElement {
                 txt.value = v;
             }
         });
+        this.querySelectorAll("[data-open-for]").forEach(btn => btn.addEventListener("click", () => void this.onOpen(btn)));
+        this.querySelectorAll("[data-copy-for]").forEach(btn => btn.addEventListener("click", () => void this.onCopy(btn)));
+    }
+    onCopy(btn) {
+        const target = btn.getAttribute("data-copy-for");
+        const txt = this.querySelector(target);
+        if (!txt) {
+            console.warn(target + " not found");
+            return;
+        }
+        const value = txt.value;
+        navigator.clipboard.writeText(value);
+    }
+    onOpen(btn) {
+        const target = btn.getAttribute("data-open-for");
+        const txt = this.querySelector(target);
+        if (!txt) {
+            console.warn(target + " not found");
+            return;
+        }
+        const txtFile = document.createElement("input");
+        txtFile.type = "file";
+        txtFile.addEventListener("change", () => void this.readFileToTextbox(txtFile.files?.[0], txt));
+        txtFile.click();
     }
     addDropSupport(txt) {
         txt.addEventListener("dragover", () => {
@@ -59,6 +83,9 @@ class ConvertApp extends HTMLElement {
         });
     }
     readFileToTextbox(file, txt) {
+        if (!file) {
+            return;
+        }
         const reader = new FileReader();
         reader.onload = () => txt.value = reader.result;
         reader.readAsText(file);

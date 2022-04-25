@@ -7,9 +7,9 @@ class ConvertApp extends HTMLElement {
         super();
 
         this.querySelector(".btn-to-i18n")?.addEventListener("click",
-            () => this.convertToChr());
+            () => void this.convertToChr());
         this.querySelector(".btn-to-key-value")?.addEventListener("click",
-            () => this.convertToKValue());
+            () => void this.convertToKValue());
 
         this.querySelectorAll<HTMLTextAreaElement>("textarea[id]").forEach(txt => {
             this.addDropSupport(txt);
@@ -19,6 +19,39 @@ class ConvertApp extends HTMLElement {
                 txt.value = v;
             }
         });
+
+        this.querySelectorAll<HTMLButtonElement>("[data-open-for]").forEach(btn =>
+            btn.addEventListener("click", () => void this.onOpen(btn)));
+        this.querySelectorAll<HTMLButtonElement>("[data-copy-for]").forEach(btn =>
+            btn.addEventListener("click", () => void this.onCopy(btn)));
+    }
+
+    private onCopy(btn: HTMLButtonElement) {
+        const target = btn.getAttribute("data-copy-for")!;
+        const txt = this.querySelector<HTMLTextAreaElement>(target);
+        if (!txt) {
+            console.warn(target + " not found");
+            return;
+        }
+
+        const value = txt.value;
+        navigator.clipboard.writeText(value);
+    }
+
+    private onOpen(btn: HTMLButtonElement) {
+        const target = btn.getAttribute("data-open-for")!;
+        const txt = this.querySelector<HTMLTextAreaElement>(target);
+        if (!txt) {
+            console.warn(target + " not found");
+            return;
+        }
+
+        const txtFile = document.createElement("input");
+        txtFile.type = "file";
+        txtFile.addEventListener("change", () =>
+            void this.readFileToTextbox(txtFile.files?.[0], txt)
+        );
+        txtFile.click();
     }
 
     private addDropSupport(txt: HTMLTextAreaElement) {
@@ -39,7 +72,7 @@ class ConvertApp extends HTMLElement {
                         case "file": {
                             const file = item.getAsFile();
                             if (!file) { continue; }
-        
+
                             void this.readFileToTextbox(file, txt);
 
                             break;
@@ -64,7 +97,9 @@ class ConvertApp extends HTMLElement {
         });
     }
 
-    private readFileToTextbox(file: File, txt: HTMLTextAreaElement) {
+    private readFileToTextbox(file: File | undefined, txt: HTMLTextAreaElement) {
+        if (!file) { return; }
+
         const reader = new FileReader();
         reader.onload = () => txt.value = reader.result as string;
         reader.readAsText(file);
